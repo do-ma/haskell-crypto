@@ -1,7 +1,6 @@
 -- SPDX-FileCopyrightText: 2020 Serokell
 --
 -- SPDX-License-Identifier: MPL-2.0
-
 {-# OPTIONS_HADDOCK not-home #-}
 
 -- | Symmetric authenticated encryption for streams.
@@ -14,17 +13,15 @@
 --
 -- * @crypto-sodium-streamly@ for @streamly@ streams.
 module Crypto.Encrypt.Symmetric.Stream
-  (
-  -- * Keys
-    Key
-  , toKey
-  ) where
+  ( -- * Keys
+    Key,
+    toKey,
+  )
+where
 
 import Data.ByteArray (ByteArrayAccess)
 import Data.ByteArray.Sized (SizedByteArray, sizedByteArray)
-
 import qualified Libsodium as Na
-
 
 -- | Encryption key that can be used for streaming symmetric encryption.
 --

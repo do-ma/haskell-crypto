@@ -1,7 +1,6 @@
 -- SPDX-FileCopyrightText: 2020 Serokell
 --
 -- SPDX-License-Identifier: MPL-2.0
-
 {-# OPTIONS_HADDOCK not-home #-}
 
 -- ! This module merely re-exports definitions from the corresponding
@@ -29,17 +28,17 @@
 -- 'open', which will verify the signature and return a copy of the
 -- original message only if the signature was valid.
 module Crypto.Sign
-  (
-  -- * Keys
-    PublicKey
-  , toPublicKey
-  , SecretKey
-  , toSecretKey
-  , keypair
+  ( -- * Keys
+    PublicKey,
+    toPublicKey,
+    SecretKey,
+    toSecretKey,
+    keypair,
 
-  -- * Signing/verifying
-  , create
-  , open
-  ) where
+    -- * Signing/verifying
+    create,
+    open,
+  )
+where
 
 import NaCl.Sign (PublicKey, SecretKey, create, keypair, open, toPublicKey, toSecretKey)

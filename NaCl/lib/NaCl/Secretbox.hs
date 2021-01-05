@@ -15,23 +15,19 @@
 --
 -- This is @crypto_secretbox_*@ from NaCl.
 module NaCl.Secretbox
-  ( Key
-  , toKey
-
-  , Nonce
-  , toNonce
-
-  , create
-  , open
-  ) where
+  ( Key,
+    toKey,
+    Nonce,
+    toNonce,
+    create,
+    open,
+  )
+where
 
 import Data.ByteArray (ByteArray, ByteArrayAccess)
-import System.IO.Unsafe (unsafePerformIO)
-
 import NaCl.Secretbox.Internal (Key, Nonce, toKey, toNonce)
-
 import qualified NaCl.Secretbox.Internal as I
-
+import System.IO.Unsafe (unsafePerformIO)
 
 -- | Encrypt a message.
 --
@@ -75,18 +71,22 @@ import qualified NaCl.Secretbox.Internal as I
 --
 -- This function adds authentication data, so if anyone modifies the cyphertext,
 -- 'open' will refuse to decrypt it.
-create
-  ::  ( ByteArrayAccess keyBytes, ByteArrayAccess nonceBytes
-      , ByteArrayAccess ptBytes, ByteArray ctBytes
-      )
-  => Key keyBytes  -- ^ Secret key
-  -> Nonce nonceBytes  -- ^ Nonce
-  -> ptBytes -- ^ Plaintext message
-  -> ctBytes
+create ::
+  ( ByteArrayAccess keyBytes,
+    ByteArrayAccess nonceBytes,
+    ByteArrayAccess ptBytes,
+    ByteArray ctBytes
+  ) =>
+  -- | Secret key
+  Key keyBytes ->
+  -- | Nonce
+  Nonce nonceBytes ->
+  -- | Plaintext message
+  ptBytes ->
+  ctBytes
 create key nonce msg =
   -- This IO is safe, because it is pure.
   unsafePerformIO $ I.create key nonce msg
-
 
 -- | Decrypt a message.
 --
@@ -99,14 +99,19 @@ create key nonce msg =
 --
 -- This function will return @Nothing@ if the encrypted message was tampered
 -- with after it was encrypted.
-open
-  ::  ( ByteArrayAccess keyBytes, ByteArrayAccess nonceBytes
-      , ByteArray ptBytes, ByteArrayAccess ctBytes
-      )
-  => Key keyBytes  -- ^ Secret key
-  -> Nonce nonceBytes  -- ^ Nonce
-  -> ctBytes -- ^ Encrypted message (cyphertext)
-  -> Maybe ptBytes
+open ::
+  ( ByteArrayAccess keyBytes,
+    ByteArrayAccess nonceBytes,
+    ByteArray ptBytes,
+    ByteArrayAccess ctBytes
+  ) =>
+  -- | Secret key
+  Key keyBytes ->
+  -- | Nonce
+  Nonce nonceBytes ->
+  -- | Encrypted message (cyphertext)
+  ctBytes ->
+  Maybe ptBytes
 open key nonce ct =
   -- This IO is safe, because it is pure.
   unsafePerformIO $ I.open key nonce ct

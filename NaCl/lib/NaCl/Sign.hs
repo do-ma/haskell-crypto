@@ -15,23 +15,20 @@
 --
 -- This is @crypto_sign_*@ from NaCl.
 module NaCl.Sign
-  ( PublicKey
-  , toPublicKey
-  , SecretKey
-  , toSecretKey
-  , keypair
-
-  , create
-  , open
-  ) where
+  ( PublicKey,
+    toPublicKey,
+    SecretKey,
+    toSecretKey,
+    keypair,
+    create,
+    open,
+  )
+where
 
 import Data.ByteArray (ByteArray, ByteArrayAccess)
-import System.IO.Unsafe (unsafePerformIO)
-
 import NaCl.Sign.Internal (PublicKey, SecretKey, keypair, toPublicKey, toSecretKey)
-
 import qualified NaCl.Sign.Internal as I
-
+import System.IO.Unsafe (unsafePerformIO)
 
 -- | Sign a message.
 --
@@ -48,17 +45,19 @@ import qualified NaCl.Sign.Internal as I
 --
 -- This function will copy the message to a new location
 -- and add a signature, so that 'open' will refuce to verify it.
-create
-  ::  ( ByteArrayAccess skBytes
-      , ByteArrayAccess ptBytes, ByteArray ctBytes
-      )
-  => SecretKey skBytes  -- ^ Signer’s secret key
-  -> ptBytes  -- ^ Message to sign
-  -> ctBytes
+create ::
+  ( ByteArrayAccess skBytes,
+    ByteArrayAccess ptBytes,
+    ByteArray ctBytes
+  ) =>
+  -- | Signer’s secret key
+  SecretKey skBytes ->
+  -- | Message to sign
+  ptBytes ->
+  ctBytes
 create sk msg =
   -- This IO is safe, because it is pure.
   unsafePerformIO $ I.create sk msg
-
 
 -- | Verify a signature.
 --
@@ -71,13 +70,16 @@ create sk msg =
 --
 -- This function will return @Nothing@ if the signature on the message
 -- is invalid.
-open
-  ::  ( ByteArrayAccess pkBytes
-      , ByteArray ptBytes, ByteArrayAccess ctBytes
-      )
-  => PublicKey pkBytes  -- ^ Signer’s public key
-  -> ctBytes -- ^ Signed message
-  -> Maybe ptBytes
+open ::
+  ( ByteArrayAccess pkBytes,
+    ByteArray ptBytes,
+    ByteArrayAccess ctBytes
+  ) =>
+  -- | Signer’s public key
+  PublicKey pkBytes ->
+  -- | Signed message
+  ctBytes ->
+  Maybe ptBytes
 open pk ct =
   -- This IO is safe, because it is pure.
   unsafePerformIO $ I.open pk ct

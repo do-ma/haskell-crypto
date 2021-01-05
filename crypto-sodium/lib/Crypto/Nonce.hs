@@ -1,6 +1,6 @@
-{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 -- SPDX-FileCopyrightText: 2020 Serokell
 --
@@ -26,17 +26,15 @@
 -- The nonces are produced using the standard @random@ package, so
 -- the generation is very fast.
 module Crypto.Nonce
-  (
-  -- * Random nonce generation
-    generate
-  ) where
+  ( -- * Random nonce generation
+    generate,
+  )
+where
 
+import Crypto.Internal.Random (generateInsecure)
 import Data.ByteArray.Sized (SizedByteArray)
 import Data.ByteString (ByteString)
 import GHC.TypeLits (KnownNat)
-
-import Crypto.Internal.Random (generateInsecure)
-
 
 -- | Generate a new random nonce.
 --

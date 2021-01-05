@@ -17,52 +17,54 @@
 --
 -- This is @crypto_box_*@ from NaCl.
 module NaCl.Stream
-  ( Key
-  , toKey
-
-  , Nonce
-  , toNonce
-
-  , MaxStreamSize
-  , generate
-
-  , xor
-  ) where
+  ( Key,
+    toKey,
+    Nonce,
+    toNonce,
+    MaxStreamSize,
+    generate,
+    xor,
+  )
+where
 
 import Data.ByteArray (ByteArray, ByteArrayAccess)
 import Data.ByteArray.Sized (ByteArrayN)
 import GHC.TypeLits (type (<=))
+import NaCl.Stream.Internal (Key, MaxStreamSize, Nonce, toKey, toNonce)
+import qualified NaCl.Stream.Internal as I
 import System.IO.Unsafe (unsafePerformIO)
 
-import NaCl.Stream.Internal (Nonce, Key, MaxStreamSize, toNonce, toKey)
-
-import qualified NaCl.Stream.Internal as I
-
-
 -- | Generate a stream of pseudo-random bytes.
-generate
-  ::  forall n key nonce ct.
-      ( ByteArrayAccess key, ByteArrayAccess nonce
-      , ByteArrayN n ct
-      , n <= MaxStreamSize
-      )
-  => Key key  -- ^ Secret key
-  -> Nonce nonce  -- ^ Nonce
-  -> ct
+generate ::
+  forall n key nonce ct.
+  ( ByteArrayAccess key,
+    ByteArrayAccess nonce,
+    ByteArrayN n ct,
+    n <= MaxStreamSize
+  ) =>
+  -- | Secret key
+  Key key ->
+  -- | Nonce
+  Nonce nonce ->
+  ct
 generate key nonce =
   -- This IO is safe, because it is pure.
   unsafePerformIO $ I.generate key nonce
 
-
 -- | Encrypt/decrypt a message.
-xor
-  ::  ( ByteArrayAccess key, ByteArrayAccess nonce
-      , ByteArrayAccess pt, ByteArray ct
-      )
-  => Key key  -- ^ Secret key
-  -> Nonce nonce  -- ^ Nonce
-  -> pt -- ^ Input (plain/cipher) text
-  -> ct
+xor ::
+  ( ByteArrayAccess key,
+    ByteArrayAccess nonce,
+    ByteArrayAccess pt,
+    ByteArray ct
+  ) =>
+  -- | Secret key
+  Key key ->
+  -- | Nonce
+  Nonce nonce ->
+  -- | Input (plain/cipher) text
+  pt ->
+  ct
 xor key nonce msg =
   -- This IO is safe, because it is pure.
   unsafePerformIO $ I.xor key nonce msg

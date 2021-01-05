@@ -2,8 +2,6 @@
 --
 -- SPDX-License-Identifier: MPL-2.0
 
--- | Libsodium initialisation.
-
 -- = Thread-safety #threadSafety#
 --
 -- Some of the Sodium (and NaCl) functions (those that generate random data)
@@ -20,14 +18,16 @@
 --
 -- 'sodiumInit' will quickly benchmark all available implementations and choose
 -- the best ones for each primitive.
+
+-- | Libsodium initialisation.
 module Crypto.Init
-  ( sodiumInit
-  , SodiumInitException (..)
-  ) where
+  ( sodiumInit,
+    SodiumInitException (..),
+  )
+where
 
 import Control.Exception (Exception, throwIO)
 import Libsodium (sodium_init)
-
 
 -- | Initialise libsodium.
 --
@@ -45,25 +45,26 @@ import Libsodium (sodium_init)
 --
 -- This function itself is thread-safe (since libsodium-1.0.11).
 sodiumInit :: IO ()
-sodiumInit = sodium_init >>= \case
-  0 ->
-    -- Success!
-    pure ()
-  1 ->
-    -- Already initialised, that’s ok.
-    pure ()
-  _ ->
-    -- If initialisation fails, using libsodium is unsafe, and there is
-    -- really nothing that can be done at this point and there is no way
-    -- to recover.
-    -- It would be nice to provide some helpful diagnostic here, but,
-    -- unfortunately, libsodium gives no information on the failure reason.
-    throwIO SodiumInitFailed
-
+sodiumInit =
+  sodium_init >>= \case
+    0 ->
+      -- Success!
+      pure ()
+    1 ->
+      -- Already initialised, that’s ok.
+      pure ()
+    _ ->
+      -- If initialisation fails, using libsodium is unsafe, and there is
+      -- really nothing that can be done at this point and there is no way
+      -- to recover.
+      -- It would be nice to provide some helpful diagnostic here, but,
+      -- unfortunately, libsodium gives no information on the failure reason.
+      throwIO SodiumInitFailed
 
 -- | Exception thrown by 'sodiumInit'.
 data SodiumInitException
-  = SodiumInitFailed  -- ^ libsodium failed to initialise.
+  = -- | libsodium failed to initialise.
+    SodiumInitFailed
 
 instance Show SodiumInitException where
   show SodiumInitFailed =

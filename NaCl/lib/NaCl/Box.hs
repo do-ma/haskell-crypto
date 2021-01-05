@@ -15,26 +15,22 @@
 --
 -- This is @crypto_box_*@ from NaCl.
 module NaCl.Box
-  ( PublicKey
-  , toPublicKey
-  , SecretKey
-  , toSecretKey
-  , keypair
-
-  , Nonce
-  , toNonce
-
-  , create
-  , open
-  ) where
+  ( PublicKey,
+    toPublicKey,
+    SecretKey,
+    toSecretKey,
+    keypair,
+    Nonce,
+    toNonce,
+    create,
+    open,
+  )
+where
 
 import Data.ByteArray (ByteArray, ByteArrayAccess)
-import System.IO.Unsafe (unsafePerformIO)
-
 import NaCl.Box.Internal (Nonce, PublicKey, SecretKey, keypair, toNonce, toPublicKey, toSecretKey)
-
 import qualified NaCl.Box.Internal as I
-
+import System.IO.Unsafe (unsafePerformIO)
 
 -- | Encrypt a message.
 --
@@ -72,20 +68,25 @@ import qualified NaCl.Box.Internal as I
 --
 -- This function adds authentication data, so if anyone modifies the cyphertext,
 -- 'open' will refuse to decrypt it.
-create
-  ::  ( ByteArrayAccess pkBytes, ByteArrayAccess skBytes
-      , ByteArrayAccess nonceBytes
-      , ByteArrayAccess ptBytes, ByteArray ctBytes
-      )
-  => PublicKey pkBytes  -- ^ Receiver’s public key
-  -> SecretKey skBytes  -- ^ Sender’s secret key
-  -> Nonce nonceBytes  -- ^ Nonce
-  -> ptBytes -- ^ Plaintext message
-  -> ctBytes
+create ::
+  ( ByteArrayAccess pkBytes,
+    ByteArrayAccess skBytes,
+    ByteArrayAccess nonceBytes,
+    ByteArrayAccess ptBytes,
+    ByteArray ctBytes
+  ) =>
+  -- | Receiver’s public key
+  PublicKey pkBytes ->
+  -- | Sender’s secret key
+  SecretKey skBytes ->
+  -- | Nonce
+  Nonce nonceBytes ->
+  -- | Plaintext message
+  ptBytes ->
+  ctBytes
 create pk sk nonce msg =
   -- This IO is safe, because it is pure.
   unsafePerformIO $ I.create pk sk nonce msg
-
 
 -- | Decrypt a message.
 --
@@ -100,16 +101,22 @@ create pk sk nonce msg =
 --
 -- This function will return @Nothing@ if the encrypted message was tampered
 -- with after it was encrypted.
-open
-  ::  ( ByteArrayAccess skBytes, ByteArrayAccess pkBytes
-      , ByteArrayAccess nonceBytes
-      , ByteArray ptBytes, ByteArrayAccess ctBytes
-      )
-  => SecretKey skBytes  -- ^ Receiver’s secret key
-  -> PublicKey pkBytes  -- ^ Sender’s public key
-  -> Nonce nonceBytes  -- ^ Nonce
-  -> ctBytes -- ^ Encrypted message (cyphertext)
-  -> Maybe ptBytes
+open ::
+  ( ByteArrayAccess skBytes,
+    ByteArrayAccess pkBytes,
+    ByteArrayAccess nonceBytes,
+    ByteArray ptBytes,
+    ByteArrayAccess ctBytes
+  ) =>
+  -- | Receiver’s secret key
+  SecretKey skBytes ->
+  -- | Sender’s public key
+  PublicKey pkBytes ->
+  -- | Nonce
+  Nonce nonceBytes ->
+  -- | Encrypted message (cyphertext)
+  ctBytes ->
+  Maybe ptBytes
 open sk pk nonce ct =
   -- This IO is safe, because it is pure.
   unsafePerformIO $ I.open sk pk nonce ct

@@ -1,6 +1,6 @@
-{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 
 -- SPDX-FileCopyrightText: 2020 Serokell
 --
@@ -78,31 +78,28 @@
 --
 -- The 'generate' function is great at generating new secure secret keys.
 module Crypto.Key
-  ( type (!>=!)
+  ( type (!>=!),
 
-  -- * Key derivation
-  , Params (..)
-  , DerivationSlip
-  , derive
-  , rederive
+    -- * Key derivation
+    Params (..),
+    DerivationSlip,
+    derive,
+    rederive,
 
-  -- * Random key generation
-  , generate
-  ) where
+    -- * Random key generation
+    generate,
+  )
+where
 
+import Crypto.Key.Internal (DerivationSlip, Params (..))
+import qualified Crypto.Key.Internal as I
+import qualified Crypto.Random
 import Data.ByteArray (ByteArrayAccess, ScrubbedBytes)
 import Data.ByteArray.Sized (ByteArrayN, SizedByteArray)
 import Data.Kind (Constraint)
-import GHC.TypeLits (type (<=), KnownNat)
-import System.IO.Unsafe (unsafePerformIO)
-
+import GHC.TypeLits (KnownNat, type (<=))
 import qualified Libsodium as Na
-
-import Crypto.Key.Internal (DerivationSlip, Params (..))
-
-import qualified Crypto.Key.Internal as I
-import qualified Crypto.Random
-
+import System.IO.Unsafe (unsafePerformIO)
 
 -- | “At least as secure as”.
 --
@@ -121,11 +118,11 @@ import qualified Crypto.Random
 -- you will not be able to put the derived from it key into a @ByteString@,
 -- because that would be less secure.
 type family a !>=! b :: Constraint where
-  a !>=! a = ()  -- reflexivity
+  a !>=! a = () -- reflexivity
   a !>=! ScrubbedBytes = LessSecureStorage a ScrubbedBytes
   a !>=! b = ()
-class LessSecureStorage a b
 
+class LessSecureStorage a b
 
 -- | Derive a key from a password using a secure KDF for the first time.
 --
@@ -150,15 +147,19 @@ class LessSecureStorage a b
 --
 -- Note: This function is not thread-safe until Sodium is initialised.
 -- See "Crypto.Init" for details.
-derive
-  ::  forall key n passwd.
-      ( ByteArrayAccess passwd
-      , ByteArrayN n key, key !>=! passwd
-      , Na.CRYPTO_PWHASH_BYTES_MIN <= n, n <= Na.CRYPTO_PWHASH_BYTES_MAX
-      )
-  => I.Params -- ^ Derivation parameters.
-  -> passwd  -- ^ Password to derive from.
-  -> IO (Maybe (key, I.DerivationSlip))
+derive ::
+  forall key n passwd.
+  ( ByteArrayAccess passwd,
+    ByteArrayN n key,
+    key !>=! passwd,
+    Na.CRYPTO_PWHASH_BYTES_MIN <= n,
+    n <= Na.CRYPTO_PWHASH_BYTES_MAX
+  ) =>
+  -- | Derivation parameters.
+  I.Params ->
+  -- | Password to derive from.
+  passwd ->
+  IO (Maybe (key, I.DerivationSlip))
 derive = I.derive
 
 -- | Reerive a key from a password using a secure KDF.
@@ -173,19 +174,23 @@ derive = I.derive
 -- as long as the same derivation slip was provided.
 --
 -- See 'derive' for additional details.
-rederive
-  ::  forall key n passwd.
-      ( ByteArrayAccess passwd
-      , ByteArrayN n key, key !>=! passwd
-      , Na.CRYPTO_PWHASH_BYTES_MIN <= n, n <= Na.CRYPTO_PWHASH_BYTES_MAX
-      )
-  => I.DerivationSlip -- ^ Original derivation slip.
-  -> passwd  -- ^ Password to rederive from.
-  -> Maybe key
+rederive ::
+  forall key n passwd.
+  ( ByteArrayAccess passwd,
+    ByteArrayN n key,
+    key !>=! passwd,
+    Na.CRYPTO_PWHASH_BYTES_MIN <= n,
+    n <= Na.CRYPTO_PWHASH_BYTES_MAX
+  ) =>
+  -- | Original derivation slip.
+  I.DerivationSlip ->
+  -- | Password to rederive from.
+  passwd ->
+  Maybe key
 rederive slip passwd =
   unsafePerformIO $ I.rederive slip passwd
-  -- This IO is safe, because it is pure.
 
+-- This IO is safe, because it is pure.
 
 -- | Generate a new secret key using a cryptographically-secure generator.
 --

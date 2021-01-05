@@ -4,30 +4,26 @@
 
 -- | Internals of @crypto_box@.
 module NaCl.Box.Internal
-  ( SecretKey
-  , toSecretKey
-  , PublicKey
-  , toPublicKey
-  , keypair
-
-  , Nonce
-  , toNonce
-
-  , create
-  , open
-  ) where
-
-import Prelude hiding (length)
+  ( SecretKey,
+    toSecretKey,
+    PublicKey,
+    toPublicKey,
+    keypair,
+    Nonce,
+    toNonce,
+    create,
+    open,
+  )
+where
 
 import Data.ByteArray (ByteArray, ByteArrayAccess, ScrubbedBytes, allocRet, length, withByteArray)
 import Data.ByteArray.Sized (SizedByteArray, sizedByteArray)
+import qualified Data.ByteArray.Sized as Sized (alloc, allocRet)
 import Data.ByteString (ByteString)
 import Data.Functor (void)
 import Data.Proxy (Proxy (Proxy))
-
-import qualified Data.ByteArray.Sized as Sized (alloc, allocRet)
 import qualified Libsodium as Na
-
+import Prelude hiding (length)
 
 -- | Secret key that can be used for Box.
 --
@@ -62,11 +58,10 @@ keypair :: IO (PublicKey ByteString, SecretKey ScrubbedBytes)
 keypair = do
   (pk, sk) <-
     Sized.allocRet Proxy $ \skPtr ->
-    Sized.alloc $ \pkPtr ->
-    -- always returns 0, so we don’t check it
-    void $ Na.crypto_box_keypair pkPtr skPtr
+      Sized.alloc $ \pkPtr ->
+        -- always returns 0, so we don’t check it
+        void $ Na.crypto_box_keypair pkPtr skPtr
   pure (pk, sk)
-
 
 -- | Nonce that can be used for Box.
 --
@@ -81,68 +76,83 @@ type Nonce a = SizedByteArray Na.CRYPTO_BOX_NONCEBYTES a
 toNonce :: ByteArrayAccess ba => ba -> Maybe (Nonce ba)
 toNonce = sizedByteArray
 
-
 -- | Encrypt a message.
-create
-  ::  ( ByteArrayAccess pkBytes, ByteArrayAccess skBytes
-      , ByteArrayAccess nonce
-      , ByteArrayAccess pt, ByteArray ct
-      )
-  => PublicKey pkBytes  -- ^ Receiver’s public key
-  -> SecretKey skBytes  -- ^ Sender’s secret key
-  -> Nonce nonce  -- ^ Nonce
-  -> pt -- ^ Plaintext message
-  -> IO ct
+create ::
+  ( ByteArrayAccess pkBytes,
+    ByteArrayAccess skBytes,
+    ByteArrayAccess nonce,
+    ByteArrayAccess pt,
+    ByteArray ct
+  ) =>
+  -- | Receiver’s public key
+  PublicKey pkBytes ->
+  -- | Sender’s secret key
+  SecretKey skBytes ->
+  -- | Nonce
+  Nonce nonce ->
+  -- | Plaintext message
+  pt ->
+  IO ct
 create pk sk nonce msg = do
-    (_ret, ct) <-
-      allocRet clen $ \ctPtr ->
+  (_ret, ct) <-
+    allocRet clen $ \ctPtr ->
       withByteArray pk $ \pkPtr ->
-      withByteArray sk $ \skPtr ->
-      withByteArray nonce $ \noncePtr ->
-      withByteArray msg $ \msgPtr -> do
-        -- TODO: Maybe, reimplement this without _easy, to stay closer
-        -- to the original NaCl.
-        Na.crypto_box_easy ctPtr
-          msgPtr (fromIntegral $ length msg)
-          noncePtr
-          pkPtr skPtr
-    -- _ret can be only 0, so we don’t check it
-    -- TODO: Actually, it looks like this function can fail and return
-    -- a -1, even though this is not documented :/.
-    pure ct
+        withByteArray sk $ \skPtr ->
+          withByteArray nonce $ \noncePtr ->
+            withByteArray msg $ \msgPtr -> do
+              -- TODO: Maybe, reimplement this without _easy, to stay closer
+              -- to the original NaCl.
+              Na.crypto_box_easy
+                ctPtr
+                msgPtr
+                (fromIntegral $ length msg)
+                noncePtr
+                pkPtr
+                skPtr
+  -- _ret can be only 0, so we don’t check it
+  -- TODO: Actually, it looks like this function can fail and return
+  -- a -1, even though this is not documented :/.
+  pure ct
   where
     clen :: Int
     clen = fromIntegral Na.crypto_box_macbytes + length msg
 
-
 -- | Decrypt a message.
-open
-  ::  ( ByteArrayAccess skBytes, ByteArrayAccess pkBytes
-      , ByteArrayAccess nonce
-      , ByteArray pt, ByteArrayAccess ct
-      )
-  => SecretKey skBytes  -- ^ Receiver’s secret key
-  -> PublicKey pkBytes  -- ^ Sender’s public key
-  -> Nonce nonce  -- ^ Nonce
-  -> ct -- ^ Cyphertext
-  -> IO (Maybe pt)
+open ::
+  ( ByteArrayAccess skBytes,
+    ByteArrayAccess pkBytes,
+    ByteArrayAccess nonce,
+    ByteArray pt,
+    ByteArrayAccess ct
+  ) =>
+  -- | Receiver’s secret key
+  SecretKey skBytes ->
+  -- | Sender’s public key
+  PublicKey pkBytes ->
+  -- | Nonce
+  Nonce nonce ->
+  -- | Cyphertext
+  ct ->
+  IO (Maybe pt)
 open sk pk nonce ct = do
-    (ret, msg) <-
-      allocRet mlen $ \msgPtr ->
+  (ret, msg) <-
+    allocRet mlen $ \msgPtr ->
       withByteArray sk $ \skPtr ->
-      withByteArray pk $ \pkPtr ->
-      withByteArray nonce $ \noncePtr ->
-      withByteArray ct $ \ctPtr -> do
-        -- TODO: Maybe, reimplement this without _easy, to stay closer
-        -- to the original NaCl.
-        Na.crypto_box_open_easy msgPtr
-          ctPtr (fromIntegral $ length ct)
-          noncePtr
-          pkPtr skPtr
-    if ret == 0 then
-      pure $ Just msg
-    else
-      pure Nothing
+        withByteArray pk $ \pkPtr ->
+          withByteArray nonce $ \noncePtr ->
+            withByteArray ct $ \ctPtr -> do
+              -- TODO: Maybe, reimplement this without _easy, to stay closer
+              -- to the original NaCl.
+              Na.crypto_box_open_easy
+                msgPtr
+                ctPtr
+                (fromIntegral $ length ct)
+                noncePtr
+                pkPtr
+                skPtr
+  if ret == 0
+    then pure $ Just msg
+    else pure Nothing
   where
     mlen :: Int
     mlen = length ct - fromIntegral Na.crypto_box_macbytes

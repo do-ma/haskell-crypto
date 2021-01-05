@@ -1,7 +1,6 @@
 -- SPDX-FileCopyrightText: 2020 Serokell
 --
 -- SPDX-License-Identifier: MPL-2.0
-
 {-# OPTIONS_HADDOCK not-home #-}
 
 -- ! This module merely re-exports definitions from the corresponding
@@ -25,25 +24,23 @@
 -- (it is just a sequence of bytes), and when you need it in the
 -- future, you “open” it with 'decrypt' using the same secret key.
 module Crypto.Encrypt.Symmetric
-  (
-  -- * Keys
-    Key
-  , toKey
+  ( -- * Keys
+    Key,
+    toKey,
 
-  -- * Nonce
-  , Nonce
-  , toNonce
+    -- * Nonce
+    Nonce,
+    toNonce,
 
-  -- * Encryption/decryption
-  , encrypt
-  , decrypt
-  ) where
+    -- * Encryption/decryption
+    encrypt,
+    decrypt,
+  )
+where
 
-import NaCl.Secretbox (Key, Nonce, toKey, toNonce)
 import Data.ByteArray (ByteArray, ByteArrayAccess)
-
+import NaCl.Secretbox (Key, Nonce, toKey, toNonce)
 import qualified NaCl.Secretbox as NaCl.Secretbox
-
 
 -- | Encrypt a message.
 --
@@ -61,16 +58,20 @@ import qualified NaCl.Secretbox as NaCl.Secretbox
 --
 -- This function adds authentication data, so if anyone modifies the cyphertext,
 -- 'open' will refuse to decrypt it.
-encrypt
-  ::  ( ByteArrayAccess keyBytes, ByteArrayAccess nonceBytes
-      , ByteArrayAccess ptBytes, ByteArray ctBytes
-      )
-  => Key keyBytes  -- ^ Secret key
-  -> Nonce nonceBytes  -- ^ Nonce
-  -> ptBytes -- ^ Plaintext message
-  -> ctBytes
+encrypt ::
+  ( ByteArrayAccess keyBytes,
+    ByteArrayAccess nonceBytes,
+    ByteArrayAccess ptBytes,
+    ByteArray ctBytes
+  ) =>
+  -- | Secret key
+  Key keyBytes ->
+  -- | Nonce
+  Nonce nonceBytes ->
+  -- | Plaintext message
+  ptBytes ->
+  ctBytes
 encrypt = NaCl.Secretbox.create
-
 
 -- | Decrypt a message.
 --
@@ -83,12 +84,17 @@ encrypt = NaCl.Secretbox.create
 --
 -- This function will return @Nothing@ if the encrypted message was tampered
 -- with after it was encrypted.
-decrypt
-  ::  ( ByteArrayAccess keyBytes, ByteArrayAccess nonceBytes
-      , ByteArray ptBytes, ByteArrayAccess ctBytes
-      )
-  => Key keyBytes  -- ^ Secret key
-  -> Nonce nonceBytes  -- ^ Nonce
-  -> ctBytes -- ^ Encrypted message (cyphertext)
-  -> Maybe ptBytes
+decrypt ::
+  ( ByteArrayAccess keyBytes,
+    ByteArrayAccess nonceBytes,
+    ByteArray ptBytes,
+    ByteArrayAccess ctBytes
+  ) =>
+  -- | Secret key
+  Key keyBytes ->
+  -- | Nonce
+  Nonce nonceBytes ->
+  -- | Encrypted message (cyphertext)
+  ctBytes ->
+  Maybe ptBytes
 decrypt = NaCl.Secretbox.open

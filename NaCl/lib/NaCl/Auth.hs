@@ -17,23 +17,19 @@
 --
 -- This is @crypto_auth_*@ from NaCl.
 module NaCl.Auth
-  ( Key
-  , toKey
-
-  , Authenticator
-  , toAuthenticator
-
-  , create
-  , verify
-  ) where
+  ( Key,
+    toKey,
+    Authenticator,
+    toAuthenticator,
+    create,
+    verify,
+  )
+where
 
 import Data.ByteArray (ByteArray, ByteArrayAccess)
-import System.IO.Unsafe (unsafePerformIO)
-
-import NaCl.Auth.Internal (Key, Authenticator, toAuthenticator, toKey)
-
+import NaCl.Auth.Internal (Authenticator, Key, toAuthenticator, toKey)
 import qualified NaCl.Auth.Internal as I
-
+import System.IO.Unsafe (unsafePerformIO)
 
 -- | Create an authenticator for a message.
 --
@@ -48,18 +44,19 @@ import qualified NaCl.Auth.Internal as I
 --
 -- This function produces authentication data, so if anyone modifies the message,
 -- @verify@ will return @False@.
-create
-  ::  ( ByteArray authBytes
-      , ByteArrayAccess keyBytes
-      , ByteArrayAccess msg
-      )
-  => Key keyBytes  -- ^ Secret key.
-  -> msg  -- ^ Message to authenticate.
-  -> Authenticator authBytes
+create ::
+  ( ByteArray authBytes,
+    ByteArrayAccess keyBytes,
+    ByteArrayAccess msg
+  ) =>
+  -- | Secret key.
+  Key keyBytes ->
+  -- | Message to authenticate.
+  msg ->
+  Authenticator authBytes
 create key msg = do
   -- This IO is safe, because it is pure.
   unsafePerformIO $ I.create key msg
-
 
 -- | Verify an authenticator for a message.
 --
@@ -72,15 +69,18 @@ create key msg = do
 --
 -- This function will return @False@ if the message is not exactly the same
 -- as it was when the authenticator was created.
-verify
-  ::  ( ByteArrayAccess authBytes
-      , ByteArrayAccess msg
-      , ByteArrayAccess keyBytes
-      )
-  => Key keyBytes  -- ^ Secret key.
-  -> msg  -- ^ Authenticated message.
-  -> Authenticator authBytes  -- ^ Authenticator tag.
-  -> Bool
+verify ::
+  ( ByteArrayAccess authBytes,
+    ByteArrayAccess msg,
+    ByteArrayAccess keyBytes
+  ) =>
+  -- | Secret key.
+  Key keyBytes ->
+  -- | Authenticated message.
+  msg ->
+  -- | Authenticator tag.
+  Authenticator authBytes ->
+  Bool
 verify key msg auth = do
   -- This IO is safe, because it is pure.
   unsafePerformIO $ I.verify key msg auth

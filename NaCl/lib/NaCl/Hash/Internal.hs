@@ -4,21 +4,18 @@
 
 -- | Internals of @crypto_hash@.
 module NaCl.Hash.Internal
-  ( HashSha256
-  , sha256
-
-  , HashSha512
-  , sha512
-  ) where
-
-import Prelude hiding (length)
+  ( HashSha256,
+    sha256,
+    HashSha512,
+    sha512,
+  )
+where
 
 import Data.ByteArray (ByteArray, ByteArrayAccess, length, withByteArray)
 import Data.ByteArray.Sized (SizedByteArray, allocRet)
 import Data.Proxy (Proxy (Proxy))
-
 import qualified Libsodium as Na
-
+import Prelude hiding (length)
 
 -- | Hash returned by 'sha256'.
 --
@@ -27,21 +24,23 @@ import qualified Libsodium as Na
 type HashSha256 a = SizedByteArray Na.CRYPTO_HASH_SHA256_BYTES a
 
 -- | Hash a message using SHA-256.
-sha256
-  ::  ( ByteArrayAccess pt
-      , ByteArray hashBytes
-      )
-  => pt  -- ^ Message to hash
-  -> IO (HashSha256 hashBytes)
+sha256 ::
+  ( ByteArrayAccess pt,
+    ByteArray hashBytes
+  ) =>
+  -- | Message to hash
+  pt ->
+  IO (HashSha256 hashBytes)
 sha256 msg = do
-    (_ret, ct) <-
-      allocRet (Proxy :: Proxy Na.CRYPTO_HASH_SHA256_BYTES) $ \hashPtr ->
+  (_ret, ct) <-
+    allocRet (Proxy :: Proxy Na.CRYPTO_HASH_SHA256_BYTES) $ \hashPtr ->
       withByteArray msg $ \msgPtr -> do
-        Na.crypto_hash_sha256 hashPtr
-          msgPtr (fromIntegral $ length msg)
-    -- _ret can be only 0, so we don’t check it
-    pure ct
-
+        Na.crypto_hash_sha256
+          hashPtr
+          msgPtr
+          (fromIntegral $ length msg)
+  -- _ret can be only 0, so we don’t check it
+  pure ct
 
 -- | Hash returned by 'sha512'.
 --
@@ -50,17 +49,20 @@ sha256 msg = do
 type HashSha512 a = SizedByteArray Na.CRYPTO_HASH_SHA512_BYTES a
 
 -- | Hash a message using SHA-512.
-sha512
-  ::  ( ByteArrayAccess pt
-      , ByteArray hashBytes
-      )
-  => pt  -- ^ Message to hash
-  -> IO (HashSha512 hashBytes)
+sha512 ::
+  ( ByteArrayAccess pt,
+    ByteArray hashBytes
+  ) =>
+  -- | Message to hash
+  pt ->
+  IO (HashSha512 hashBytes)
 sha512 msg = do
-    (_ret, ct) <-
-      allocRet (Proxy :: Proxy Na.CRYPTO_HASH_SHA512_BYTES) $ \hashPtr ->
+  (_ret, ct) <-
+    allocRet (Proxy :: Proxy Na.CRYPTO_HASH_SHA512_BYTES) $ \hashPtr ->
       withByteArray msg $ \msgPtr -> do
-        Na.crypto_hash_sha512 hashPtr
-          msgPtr (fromIntegral $ length msg)
-    -- _ret can be only 0, so we don’t check it
-    pure ct
+        Na.crypto_hash_sha512
+          hashPtr
+          msgPtr
+          (fromIntegral $ length msg)
+  -- _ret can be only 0, so we don’t check it
+  pure ct

@@ -4,24 +4,20 @@
 
 -- | Internals of @crypto_auth@.
 module NaCl.Auth.Internal
-  ( Key
-  , toKey
-
-  , Authenticator
-  , toAuthenticator
-
-  , create
-  , verify
-  ) where
-
-import Prelude hiding (length)
+  ( Key,
+    toKey,
+    Authenticator,
+    toAuthenticator,
+    create,
+    verify,
+  )
+where
 
 import Data.ByteArray (ByteArray, ByteArrayAccess, length, withByteArray)
 import Data.ByteArray.Sized (SizedByteArray, allocRet, sizedByteArray)
 import Data.Proxy (Proxy (Proxy))
-
 import qualified Libsodium as Na
-
+import Prelude hiding (length)
 
 -- | Secret key that can be used for Sea authentication.
 --
@@ -37,7 +33,6 @@ type Key a = SizedByteArray Na.CRYPTO_AUTH_KEYBYTES a
 toKey :: ByteArrayAccess ba => ba -> Maybe (Key ba)
 toKey = sizedByteArray
 
-
 -- | A tag that confirms the authenticity of somde data.
 type Authenticator a = SizedByteArray Na.CRYPTO_AUTH_BYTES a
 
@@ -48,44 +43,51 @@ type Authenticator a = SizedByteArray Na.CRYPTO_AUTH_BYTES a
 toAuthenticator :: ByteArrayAccess ba => ba -> Maybe (Authenticator ba)
 toAuthenticator = sizedByteArray
 
-
 -- | Create an authenticator.
-create
-  ::  ( ByteArrayAccess keyBytes
-      , ByteArrayAccess msg
-      , ByteArray authBytes
-      )
-  => Key keyBytes  -- ^ Secret key.
-  -> msg  -- ^ Message to authenticate.
-  -> IO (Authenticator authBytes)
+create ::
+  ( ByteArrayAccess keyBytes,
+    ByteArrayAccess msg,
+    ByteArray authBytes
+  ) =>
+  -- | Secret key.
+  Key keyBytes ->
+  -- | Message to authenticate.
+  msg ->
+  IO (Authenticator authBytes)
 create key msg = do
-    (_ret, auth) <-
-      allocRet (Proxy @Na.CRYPTO_AUTH_BYTES) $ \authPtr ->
+  (_ret, auth) <-
+    allocRet (Proxy @Na.CRYPTO_AUTH_BYTES) $ \authPtr ->
       withByteArray key $ \keyPtr ->
-      withByteArray msg $ \msgPtr -> do
-        Na.crypto_auth authPtr
-          msgPtr (fromIntegral $ length msg)
-          keyPtr
-    -- _ret can be only 0, so we don’t check it
-    pure auth
-
+        withByteArray msg $ \msgPtr -> do
+          Na.crypto_auth
+            authPtr
+            msgPtr
+            (fromIntegral $ length msg)
+            keyPtr
+  -- _ret can be only 0, so we don’t check it
+  pure auth
 
 -- | Verify an authenticator.
-verify
-  ::  ( ByteArrayAccess keyBytes
-      , ByteArrayAccess msg
-      , ByteArrayAccess authBytes
-      )
-  => Key keyBytes  -- ^ Secret key.
-  -> msg  -- ^ Authenticated message.
-  -> Authenticator authBytes  -- ^ Authenticator tag.
-  -> IO Bool
+verify ::
+  ( ByteArrayAccess keyBytes,
+    ByteArrayAccess msg,
+    ByteArrayAccess authBytes
+  ) =>
+  -- | Secret key.
+  Key keyBytes ->
+  -- | Authenticated message.
+  msg ->
+  -- | Authenticator tag.
+  Authenticator authBytes ->
+  IO Bool
 verify key msg auth = do
-    ret <-
-      withByteArray key $ \keyPtr ->
+  ret <-
+    withByteArray key $ \keyPtr ->
       withByteArray msg $ \msgPtr ->
-      withByteArray auth $ \authPtr ->
-        Na.crypto_auth_verify authPtr
-          msgPtr (fromIntegral $ length msg)
-          keyPtr
-    pure $ ret == 0
+        withByteArray auth $ \authPtr ->
+          Na.crypto_auth_verify
+            authPtr
+            msgPtr
+            (fromIntegral $ length msg)
+            keyPtr
+  pure $ ret == 0

@@ -11,22 +11,20 @@
 -- the user’s responsibility to hash the output if required for the security
 -- of the specific application.
 module NaCl.Scalarmult
-  ( Point (..)
-  , toPoint
-  , Scalar (..)
-  , toScalar
-
-  , mult
-  , multBase
-  ) where
+  ( Point (..),
+    toPoint,
+    Scalar (..),
+    toScalar,
+    mult,
+    multBase,
+  )
+where
 
 import Data.ByteArray (ByteArray, ByteArrayAccess, withByteArray)
 import Data.ByteArray.Sized (ByteArrayN, SizedByteArray, allocRet, sizedByteArray)
 import Data.Proxy (Proxy (Proxy))
-import System.IO.Unsafe (unsafePerformIO)
-
 import qualified Libsodium as Na
-
+import System.IO.Unsafe (unsafePerformIO)
 
 -- | Point in the group.
 --
@@ -34,8 +32,11 @@ import qualified Libsodium as Na
 -- bytes. This can be, for example, a @ByteString@.
 newtype Point a = Point (SizedByteArray Na.CRYPTO_SCALARMULT_BYTES a)
   deriving
-    ( ByteArrayAccess, ByteArrayN Na.CRYPTO_SCALARMULT_BYTES
-    , Eq, Ord, Show
+    ( ByteArrayAccess,
+      ByteArrayN Na.CRYPTO_SCALARMULT_BYTES,
+      Eq,
+      Ord,
+      Show
     )
 
 -- | Convert bytes to a group point.
@@ -48,8 +49,11 @@ toPoint = fmap Point . sizedByteArray
 -- bytes. This can be, for example, a @ByteString@.
 newtype Scalar a = Scalar (SizedByteArray Na.CRYPTO_SCALARMULT_SCALARBYTES a)
   deriving
-    ( ByteArrayAccess, ByteArrayN Na.CRYPTO_SCALARMULT_SCALARBYTES
-    , Eq, Ord, Show
+    ( ByteArrayAccess,
+      ByteArrayN Na.CRYPTO_SCALARMULT_SCALARBYTES,
+      Eq,
+      Ord,
+      Show
     )
 
 -- | Convert bytes to a scalar.
@@ -66,37 +70,40 @@ toScalar = fmap Scalar . sizedByteArray
 -- * or the result of the multiplication is the identity point.
 --
 -- This is how it is implemented in libsodium.
-mult
-  :: forall outBytes pointBytes scalarBytes.
-     ( ByteArrayAccess pointBytes
-     , ByteArrayAccess scalarBytes
-     , ByteArray outBytes
-     )
-  => Point pointBytes  -- ^ Group point.
-  -> Scalar scalarBytes  -- ^ Scalar.
-  -> Maybe (Point outBytes)
+mult ::
+  forall outBytes pointBytes scalarBytes.
+  ( ByteArrayAccess pointBytes,
+    ByteArrayAccess scalarBytes,
+    ByteArray outBytes
+  ) =>
+  -- | Group point.
+  Point pointBytes ->
+  -- | Scalar.
+  Scalar scalarBytes ->
+  Maybe (Point outBytes)
 mult point scalar = unsafePerformIO $ do
-    (ret, out) <-
-      allocRet (Proxy @Na.CRYPTO_SCALARMULT_BYTES) $ \outPtr ->
+  (ret, out) <-
+    allocRet (Proxy @Na.CRYPTO_SCALARMULT_BYTES) $ \outPtr ->
       withByteArray point $ \pointPtr ->
-      withByteArray scalar $ \scalarPtr ->
-        Na.crypto_scalarmult outPtr scalarPtr pointPtr
-    if ret == 0
+        withByteArray scalar $ \scalarPtr ->
+          Na.crypto_scalarmult outPtr scalarPtr pointPtr
+  if ret == 0
     then pure $ Just out
     else pure Nothing
 
 -- | Multiply the standard group point by an integer.
-multBase
-  :: forall outBytes scalarBytes.
-     ( ByteArrayAccess scalarBytes
-     , ByteArray outBytes
-     )
-  => Scalar scalarBytes  -- ^ Scalar.
-  -> Point outBytes
+multBase ::
+  forall outBytes scalarBytes.
+  ( ByteArrayAccess scalarBytes,
+    ByteArray outBytes
+  ) =>
+  -- | Scalar.
+  Scalar scalarBytes ->
+  Point outBytes
 multBase scalar = unsafePerformIO $ do
-    (_ret, out) <-
-      allocRet (Proxy @Na.CRYPTO_SCALARMULT_BYTES) $ \outPtr ->
+  (_ret, out) <-
+    allocRet (Proxy @Na.CRYPTO_SCALARMULT_BYTES) $ \outPtr ->
       withByteArray scalar $ \scalarPtr ->
         Na.crypto_scalarmult_base outPtr scalarPtr
-    -- _ret can be only 0, so we don’t check it
-    pure out
+  -- _ret can be only 0, so we don’t check it
+  pure out

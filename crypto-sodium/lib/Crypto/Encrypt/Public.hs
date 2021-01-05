@@ -1,7 +1,6 @@
 -- SPDX-FileCopyrightText: 2020 Serokell
 --
 -- SPDX-License-Identifier: MPL-2.0
-
 {-# OPTIONS_HADDOCK not-home #-}
 
 -- ! This module merely re-exports definitions from the corresponding
@@ -31,28 +30,26 @@
 -- as otherwise the receiver would not be able to have any guarantees
 -- regarding the source or the integrity of the data.
 module Crypto.Encrypt.Public
-  (
-  -- * Keys
-    PublicKey
-  , toPublicKey
-  , SecretKey
-  , toSecretKey
-  , keypair
+  ( -- * Keys
+    PublicKey,
+    toPublicKey,
+    SecretKey,
+    toSecretKey,
+    keypair,
 
-  -- * Nonce
-  , Nonce
-  , toNonce
+    -- * Nonce
+    Nonce,
+    toNonce,
 
-  -- * Encryption/decryption
-  , encrypt
-  , decrypt
-  ) where
+    -- * Encryption/decryption
+    encrypt,
+    decrypt,
+  )
+where
 
 import Data.ByteArray (ByteArray, ByteArrayAccess)
 import NaCl.Box (Nonce, PublicKey, SecretKey, keypair, toNonce, toPublicKey, toSecretKey)
-
 import qualified NaCl.Box as NaCl.Box
-
 
 -- | Encrypt a message.
 --
@@ -74,18 +71,23 @@ import qualified NaCl.Box as NaCl.Box
 --
 -- This function adds authentication data, so if anyone modifies the cyphertext,
 -- 'decrypt' will refuse to decrypt it.
-encrypt
-  ::  ( ByteArrayAccess pkBytes, ByteArrayAccess skBytes
-      , ByteArrayAccess nonceBytes
-      , ByteArrayAccess ptBytes, ByteArray ctBytes
-      )
-  => PublicKey pkBytes  -- ^ Receiver’s public key
-  -> SecretKey skBytes  -- ^ Sender’s secret key
-  -> Nonce nonceBytes  -- ^ Nonce
-  -> ptBytes -- ^ Plaintext message
-  -> ctBytes
+encrypt ::
+  ( ByteArrayAccess pkBytes,
+    ByteArrayAccess skBytes,
+    ByteArrayAccess nonceBytes,
+    ByteArrayAccess ptBytes,
+    ByteArray ctBytes
+  ) =>
+  -- | Receiver’s public key
+  PublicKey pkBytes ->
+  -- | Sender’s secret key
+  SecretKey skBytes ->
+  -- | Nonce
+  Nonce nonceBytes ->
+  -- | Plaintext message
+  ptBytes ->
+  ctBytes
 encrypt = NaCl.Box.create
-
 
 -- | Decrypt a message.
 --
@@ -100,14 +102,20 @@ encrypt = NaCl.Box.create
 --
 -- This function will return @Nothing@ if the encrypted message was tampered
 -- with after it was encrypted.
-decrypt
-  ::  ( ByteArrayAccess skBytes, ByteArrayAccess pkBytes
-      , ByteArrayAccess nonceBytes
-      , ByteArray ptBytes, ByteArrayAccess ctBytes
-      )
-  => SecretKey skBytes  -- ^ Receiver’s secret key
-  -> PublicKey pkBytes  -- ^ Sender’s public key
-  -> Nonce nonceBytes  -- ^ Nonce
-  -> ctBytes -- ^ Encrypted message (cyphertext)
-  -> Maybe ptBytes
+decrypt ::
+  ( ByteArrayAccess skBytes,
+    ByteArrayAccess pkBytes,
+    ByteArrayAccess nonceBytes,
+    ByteArray ptBytes,
+    ByteArrayAccess ctBytes
+  ) =>
+  -- | Receiver’s secret key
+  SecretKey skBytes ->
+  -- | Sender’s public key
+  PublicKey pkBytes ->
+  -- | Nonce
+  Nonce nonceBytes ->
+  -- | Encrypted message (cyphertext)
+  ctBytes ->
+  Maybe ptBytes
 decrypt = NaCl.Box.open
