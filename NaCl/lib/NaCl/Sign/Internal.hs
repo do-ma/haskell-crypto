@@ -9,6 +9,7 @@ module NaCl.Sign.Internal
     PublicKey,
     toPublicKey,
     keypair,
+    seededKeypair,
     create,
     open,
   )
@@ -23,6 +24,13 @@ import Data.Proxy (Proxy (Proxy))
 import Foreign.Ptr (nullPtr)
 import qualified Libsodium as Na
 import Prelude hiding (length)
+
+-- | Seed that is used to make signature keypair.
+--
+-- This type is parametrised by the actual data type that contains
+-- bytes. This can be, for example, a @ByteString@, but, since this
+-- is used to create a secret key, it is better to use @ScrubbedBytes@.
+type Seed a = SizedByteArray Na.CRYPTO_SIGN_SEEDBYTES a
 
 -- | Secret key that can be used for creating a signature.
 --
@@ -70,10 +78,25 @@ keypair =
   -- allocRet returns a tuple consisiting of
   --  1. Whatever underlying `IO a` function returns
   --  2. Contents of allocated Ptr
-  Sized.allocRet Proxy $ \skPtr -> do
+  Sized.allocRet Proxy $ \skPtr ->
     -- alloc returns contents of pkPtr after executing side effect
     Sized.alloc $ \pkPtr ->
       void $ Na.crypto_sign_keypair pkPtr skPtr
+
+-- | Given a key, generate a new 'SecretKey' together with its 'PublicKey'.
+--
+-- Note: this function is not thread-safe (since the underlying
+-- C function is not thread-safe both in Sodium and in NaCl)!
+-- Either make sure there are no concurrent calls or see
+-- @Crypto.Init@ in
+-- <https://hackage.haskell.org/package/crypto-sodium crypto-sodium>
+-- to learn how to make this function thread-safe.
+seededKeypair :: Seed ScrubbedBytes -> IO (PublicKey ByteString, SecretKey ScrubbedBytes)
+seededKeypair seed =
+  Sized.allocRet Proxy $ \skPtr ->
+    Sized.alloc $ \pkPtr ->
+      withByteArray seed $ \seedPtr ->
+        void $ Na.crypto_sign_seed_keypair pkPtr skPtr seedPtr
 
 -- | Sign a message.
 create ::

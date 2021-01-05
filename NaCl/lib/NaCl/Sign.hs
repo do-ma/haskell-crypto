@@ -20,13 +20,14 @@ module NaCl.Sign
     SecretKey,
     toSecretKey,
     keypair,
+    seededKeypair,
     create,
     open,
   )
 where
 
 import Data.ByteArray (ByteArray, ByteArrayAccess)
-import NaCl.Sign.Internal (PublicKey, SecretKey, keypair, toPublicKey, toSecretKey)
+import NaCl.Sign.Internal (PublicKey, SecretKey, keypair, seededKeypair, toPublicKey, toSecretKey)
 import qualified NaCl.Sign.Internal as I
 import System.IO.Unsafe (unsafePerformIO)
 

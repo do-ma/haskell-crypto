@@ -63,6 +63,7 @@ tests:
 
     dependencies:
       - NaCl
+      - crypto-sodium
 
       - hedgehog
       - HUnit

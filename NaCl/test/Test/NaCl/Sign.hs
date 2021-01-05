@@ -6,8 +6,10 @@
 module Test.NaCl.Sign where
 
 import Control.Monad.IO.Class (liftIO)
+import Crypto.Key (Params (..), derive)
 import Data.ByteString (ByteString)
 import Data.ByteString.Base16 (decode)
+import Data.Maybe (fromJust)
 import Hedgehog (Property, forAll, property, tripping)
 import qualified Hedgehog.Gen as G
 import Hedgehog.Internal.Property (forAllT)
@@ -18,6 +20,31 @@ import Test.HUnit (Assertion, (@?=))
 hprop_encode_decode :: Property
 hprop_encode_decode = property $ do
   (pk, sk) <- forAllT $ liftIO $ Sign.keypair
+  msg <- forAll $ G.bytes (R.linear 0 1_000)
+  tripping msg (encodeBs sk) (decodeBs pk)
+  where
+    -- We need to specify the type of the signed msg as it is polymorphic
+    encodeBs sk msg = Sign.create sk msg :: ByteString
+    decodeBs pk ct = Sign.open pk ct :: Maybe ByteString
+
+hprop_seeded_encode_decode :: Property
+hprop_seeded_encode_decode = property $ do
+  passwd <- forAll $ G.bytes $ R.linear 0 1_337
+  pwhashTupleMaybe <-
+    liftIO $
+      derive
+        ( Params
+            { -- NEVER USE THESE PARAMS IN ANY REAL CODE
+              -- limits are so low to have blazingly quick
+              -- proptests.
+              opsLimit = 1,
+              memLimit =
+                1_000_000
+            }
+        )
+        passwd
+  let (seed, _) = fromJust pwhashTupleMaybe
+  (pk, sk) <- forAllT $ liftIO $ Sign.seededKeypair seed
   msg <- forAll $ G.bytes (R.linear 0 1_000)
   tripping msg (encodeBs sk) (decodeBs pk)
   where
