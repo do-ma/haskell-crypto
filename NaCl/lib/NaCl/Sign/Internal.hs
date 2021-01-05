@@ -76,7 +76,7 @@ keypair =
   Sized.allocRet Proxy $ \skPtr -> do
     -- alloc returns contents of pkPtr after executing side effect
     Sized.alloc $ \pkPtr ->
-      void $ Na.crypto_sign_keypair pkPtr skPt
+      void $ Na.crypto_sign_keypair pkPtr skPtr
 
 
 -- | Sign a message.
