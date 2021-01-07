@@ -4,19 +4,24 @@
 
 -- | Internals of @crypto_sign@.
 module NaCl.Sign.Internal
-  ( SecretKey,
+  ( Signature,
+    toSignature,
+    SecretKey,
     toSecretKey,
     PublicKey,
     toPublicKey,
     keypair,
     seededKeypair,
     create,
+    createDetached,
     open,
+    verifyDetached,
+    toSeed,
   )
 where
 
 import Data.ByteArray (ByteArray, ByteArrayAccess, ScrubbedBytes, allocRet, length, withByteArray)
-import Data.ByteArray.Sized (SizedByteArray, sizedByteArray)
+import Data.ByteArray.Sized (SizedByteArray, alloc, sizedByteArray)
 import qualified Data.ByteArray.Sized as Sized (alloc, allocRet)
 import Data.ByteString (ByteString)
 import Data.Functor (void)
@@ -25,12 +30,26 @@ import Foreign.Ptr (nullPtr)
 import qualified Libsodium as Na
 import Prelude hiding (length)
 
+-- | A type alias for detached signatures.
+--
+-- This type is parametrised by the actual data type that contains
+-- bytes. This can be, for example, a @ByteString@,
+type Signature a = SizedByteArray Na.CRYPTO_SIGN_BYTES a
+
+-- | Convert bytes to a detached signature
+toSignature :: ByteArrayAccess bs => bs -> Maybe (Signature bs)
+toSignature = sizedByteArray
+
 -- | Seed that is used to make signature keypair.
 --
 -- This type is parametrised by the actual data type that contains
 -- bytes. This can be, for example, a @ByteString@, but, since this
 -- is used to create a secret key, it is better to use @ScrubbedBytes@.
 type Seed a = SizedByteArray Na.CRYPTO_SIGN_SEEDBYTES a
+
+-- | Convert bytes to a Seed
+toSeed :: ByteArrayAccess  bs => bs -> Maybe (Seed bs)
+toSeed = sizedByteArray
 
 -- | Secret key that can be used for creating a signature.
 --
@@ -128,6 +147,31 @@ create sk msg = do
     clen :: Int
     clen = fromIntegral Na.crypto_sign_bytes + length msg
 
+-- | Sign a message and return detached signature.
+createDetached ::
+  ( ByteArrayAccess skBytes,
+    ByteArrayAccess pt,
+    ByteArray sig
+  ) =>
+  -- | Signer’s secret key
+  SecretKey skBytes ->
+  -- | Message to sign
+  pt ->
+  IO (Signature sig)
+createDetached sk msg = do
+  alloc $ \sigPtr ->
+    withByteArray sk $ \skPtr ->
+      withByteArray msg $ \msgPtr -> do
+        void $ Na.crypto_sign_detached
+          sigPtr
+          nullPtr
+          msgPtr
+          (fromIntegral $ length msg)
+          skPtr
+-- _ret can be only 0, so we don’t check it
+  -- TODO: Actually, it looks like this function can fail and return
+  -- a -1, even though this is not documented :/.
+
 -- | Verify the signature of a signed message.
 open ::
   ( ByteArrayAccess pkBytes,
@@ -156,3 +200,20 @@ open pk ct = do
   where
     mlen :: Int
     mlen = length ct - fromIntegral Na.crypto_sign_bytes
+
+verifyDetached ::
+  (ByteArrayAccess pkBytes, ByteArrayAccess msg) =>
+  Signature ByteString ->
+  msg ->
+  PublicKey pkBytes ->
+  IO Bool
+verifyDetached sig msg pk = do
+  x <- withByteArray sig $ \sigPtr -> do
+    withByteArray msg $ \msgPtr -> do
+      withByteArray pk $ \pkPtr -> do
+        Na.crypto_sign_verify_detached
+          sigPtr
+          msgPtr
+          ((fromIntegral . length) msg)
+          pkPtr
+  return $ x == 0

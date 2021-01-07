@@ -23,11 +23,26 @@ module NaCl.Sign
     seededKeypair,
     create,
     open,
+    toSignature,
+    Signature,
+    verifyDetached,
+    createDetached,
   )
 where
 
 import Data.ByteArray (ByteArray, ByteArrayAccess)
-import NaCl.Sign.Internal (PublicKey, SecretKey, keypair, seededKeypair, toPublicKey, toSecretKey)
+import NaCl.Sign.Internal
+  ( PublicKey,
+    SecretKey,
+    Signature,
+    createDetached,
+    keypair,
+    seededKeypair,
+    toPublicKey,
+    toSecretKey,
+    toSignature,
+    verifyDetached,
+  )
 import qualified NaCl.Sign.Internal as I
 import System.IO.Unsafe (unsafePerformIO)
 

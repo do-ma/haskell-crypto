@@ -10,7 +10,7 @@ import Crypto.Key (Params (..), derive)
 import Data.ByteString (ByteString)
 import Data.ByteString.Base16 (decode)
 import Data.Maybe (fromJust)
-import Hedgehog (Property, forAll, property, tripping)
+import Hedgehog (Property, assert, forAll, property, tripping)
 import qualified Hedgehog.Gen as G
 import Hedgehog.Internal.Property (forAllT)
 import qualified Hedgehog.Range as R
@@ -22,6 +22,9 @@ hprop_encode_decode = property $ do
   (pk, sk) <- forAllT $ liftIO $ Sign.keypair
   msg <- forAll $ G.bytes (R.linear 0 1_000)
   tripping msg (encodeBs sk) (decodeBs pk)
+  sig <- liftIO $ Sign.createDetached sk msg
+  isok <- liftIO $ Sign.verifyDetached sig msg pk
+  assert isok
   where
     -- We need to specify the type of the signed msg as it is polymorphic
     encodeBs sk msg = Sign.create sk msg :: ByteString
