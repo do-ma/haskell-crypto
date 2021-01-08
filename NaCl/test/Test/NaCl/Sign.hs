@@ -19,16 +19,21 @@ import Test.HUnit (Assertion, (@?=))
 
 hprop_encode_decode :: Property
 hprop_encode_decode = property $ do
-  (pk, sk) <- forAllT $ liftIO $ Sign.keypair
+  (pk, sk) <- forAllT $ liftIO Sign.keypair
+  (pk1, sk1) <- forAllT $ liftIO Sign.keypair
   msg <- forAll $ G.bytes (R.linear 0 1_000)
+  -- Make sure that encode sk is (decode pk)^{-1}
   tripping msg (encodeBs sk) (decodeBs pk)
-  sig <- liftIO $ Sign.createDetached sk msg
-  isok <- liftIO $ Sign.verifyDetached sig msg pk
-  assert isok
+  let sig = createDetached sk1 msg
+  -- Make sure that happy path of detached sigs work
+  assert $ Sign.verifyDetached sig msg pk1
+  -- Make sure that fail mode of detached sigs work
+  assert $ not $ Sign.verifyDetached sig msg pk
   where
     -- We need to specify the type of the signed msg as it is polymorphic
     encodeBs sk msg = Sign.create sk msg :: ByteString
     decodeBs pk ct = Sign.open pk ct :: Maybe ByteString
+    createDetached sk msg = Sign.createDetached sk msg :: Sign.Signature ByteString
 
 hprop_seeded_encode_decode :: Property
 hprop_seeded_encode_decode = property $ do
@@ -47,13 +52,14 @@ hprop_seeded_encode_decode = property $ do
         )
         passwd
   let (seed, _) = fromJust pwhashTupleMaybe
-  (pk, sk) <- forAllT $ liftIO $ Sign.seededKeypair seed
+  let (pk, sk) = seededKeypair (seed :: Sign.Seed ByteString)
   msg <- forAll $ G.bytes (R.linear 0 1_000)
   tripping msg (encodeBs sk) (decodeBs pk)
   where
     -- We need to specify the type of the signed msg as it is polymorphic
     encodeBs sk msg = Sign.create sk msg :: ByteString
     decodeBs pk ct = Sign.open pk ct :: Maybe ByteString
+    seededKeypair seed = Sign.seededKeypair seed :: (Sign.PublicKey ByteString, Sign.SecretKey ByteString)
 
 -- Test vectors from RFC8032.
 --

@@ -49,7 +49,7 @@ toSignature = sizedByteArray
 type Seed a = SizedByteArray Na.CRYPTO_SIGN_SEEDBYTES a
 
 -- | Convert bytes to a Seed
-toSeed :: ByteArrayAccess  bs => bs -> Maybe (Seed bs)
+toSeed :: ByteArrayAccess bs => bs -> Maybe (Seed bs)
 toSeed = sizedByteArray
 
 -- | Secret key that can be used for creating a signature.
@@ -105,13 +105,15 @@ keypair =
 
 -- | Given a key, generate a new 'SecretKey' together with its 'PublicKey'.
 --
--- Note: this function is not thread-safe (since the underlying
--- C function is not thread-safe both in Sodium and in NaCl)!
--- Either make sure there are no concurrent calls or see
--- @Crypto.Init@ in
--- <https://hackage.haskell.org/package/crypto-sodium crypto-sodium>
--- to learn how to make this function thread-safe.
-seededKeypair :: Seed ScrubbedBytes -> IO (PublicKey ByteString, SecretKey ScrubbedBytes)
+-- I'm not sure about the thread-safety of this function since it's supposed to
+-- be pure.
+seededKeypair ::
+  ( ByteArrayAccess seed,
+    ByteArray sk,
+    ByteArray pk
+  ) =>
+  Seed seed ->
+  IO (PublicKey pk, SecretKey sk)
 seededKeypair seed =
   Sized.allocRet Proxy $ \skPtr ->
     Sized.alloc $ \pkPtr ->
@@ -163,15 +165,17 @@ createDetached sk msg = do
   alloc $ \sigPtr ->
     withByteArray sk $ \skPtr ->
       withByteArray msg $ \msgPtr -> do
-        void $ Na.crypto_sign_detached
-          sigPtr
-          nullPtr
-          msgPtr
-          (fromIntegral $ length msg)
-          skPtr
+        void $
+          Na.crypto_sign_detached
+            sigPtr
+            nullPtr
+            msgPtr
+            (fromIntegral $ length msg)
+            skPtr
+
 -- _ret can be only 0, so we don’t check it
-  -- TODO: Actually, it looks like this function can fail and return
-  -- a -1, even though this is not documented :/.
+-- TODO: Actually, it looks like this function can fail and return
+-- a -1, even though this is not documented :/.
 
 -- | Verify the signature of a signed message.
 open ::
@@ -203,8 +207,8 @@ open pk ct = do
     mlen = length ct - fromIntegral Na.crypto_sign_bytes
 
 verifyDetached ::
-  (ByteArrayAccess pkBytes, ByteArrayAccess msg) =>
-  Signature ByteString ->
+  (ByteArrayAccess pkBytes, ByteArrayAccess msg, ByteArray sig) =>
+  Signature sig ->
   msg ->
   PublicKey pkBytes ->
   IO Bool

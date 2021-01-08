@@ -27,8 +27,8 @@ module NaCl.Sign
     open,
     toSignature,
     Signature,
-    verifyDetached,
     createDetached,
+    verifyDetached,
   )
 where
 
@@ -36,19 +36,27 @@ import Data.ByteArray (ByteArray, ByteArrayAccess)
 import NaCl.Sign.Internal
   ( PublicKey,
     SecretKey,
-    Signature,
     Seed,
-    createDetached,
+    Signature,
     keypair,
-    seededKeypair,
     toPublicKey,
     toSecretKey,
-    toSignature,
     toSeed,
-    verifyDetached,
+    toSignature,
   )
 import qualified NaCl.Sign.Internal as I
 import System.IO.Unsafe (unsafePerformIO)
+
+-- | Generate keypair from seed.
+--
+-- Given a key, generated with 'pwhash' (see `crypto-sodium/lib/Crypto/Key.hs`)
+-- generate a new 'SecretKey' together with its 'PublicKey'.
+seededKeypair ::
+  (ByteArray sk, ByteArray pk, ByteArrayAccess seed) =>
+  Seed seed ->
+  (PublicKey pk, SecretKey sk)
+seededKeypair seed =
+  unsafePerformIO $ I.seededKeypair seed
 
 -- | Sign a message.
 --
@@ -58,8 +66,9 @@ import System.IO.Unsafe (unsafePerformIO)
 --
 -- *   @sk@ is the signer’s secret key, used for authentication.
 --
---     This is generated using 'keypair' and the public part of the key
---     needs to be given to the verifying party in advance.
+--     This is generated using 'keypair' or 'seededKeypair' and
+--     the public part of the key needs to be given to the
+--     verifying party in advance.
 --
 -- *   @message@ is the data you are signing.
 --
@@ -78,6 +87,17 @@ create ::
 create sk msg =
   -- This IO is safe, because it is pure.
   unsafePerformIO $ I.create sk msg
+
+-- | Create a detached signature of a message.
+--
+-- Same as `create`, just in detached mode.
+createDetached ::
+  (ByteArray sig, ByteArrayAccess skBytes, ByteArrayAccess pt) =>
+  SecretKey skBytes ->
+  pt ->
+  Signature sig
+createDetached sk msg =
+  unsafePerformIO $ I.createDetached sk msg
 
 -- | Verify a signature.
 --
@@ -103,3 +123,20 @@ open ::
 open pk ct =
   -- This IO is safe, because it is pure.
   unsafePerformIO $ I.open pk ct
+
+-- | Verify a detached signature.
+--
+-- * @sig@ is detached signature
+-- * @msg@ is message that sig supposedly signs
+-- * @pk@ is signer's alleged public key
+--
+-- This function will return @False@ if the signature on the message
+-- is invalid.
+verifyDetached ::
+  (ByteArrayAccess pkBytes, ByteArrayAccess msg, ByteArray sig) =>
+  Signature sig ->
+  msg ->
+  PublicKey pkBytes ->
+  Bool
+verifyDetached sig msg pk =
+  unsafePerformIO $ I.verifyDetached sig msg pk
