@@ -10,13 +10,14 @@ module NaCl.Sign.Internal
     toSecretKey,
     PublicKey,
     toPublicKey,
+    Seed,
+    toSeed,
     keypair,
     seededKeypair,
     create,
     createDetached,
     open,
     verifyDetached,
-    toSeed,
   )
 where
 

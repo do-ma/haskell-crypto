@@ -19,6 +19,8 @@ module NaCl.Sign
     toPublicKey,
     SecretKey,
     toSecretKey,
+    Seed,
+    toSeed,
     keypair,
     seededKeypair,
     create,
@@ -35,12 +37,14 @@ import NaCl.Sign.Internal
   ( PublicKey,
     SecretKey,
     Signature,
+    Seed,
     createDetached,
     keypair,
     seededKeypair,
     toPublicKey,
     toSecretKey,
     toSignature,
+    toSeed,
     verifyDetached,
   )
 import qualified NaCl.Sign.Internal as I
